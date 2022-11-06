@@ -20,7 +20,7 @@ class FileController extends Controller
      */
     public function index()
     {
-        $files = File::all();
+        $files = File::loggedInUser()->get();
 
         return new FileCollection($files);
     }
@@ -36,7 +36,7 @@ class FileController extends Controller
         $path = $request->file('file')->store(config('file.directory'));
         $path = explode('/', $path);
 
-        $file = File::create(['name' => $path[1]]);
+        $file = File::create(['name' => $path[1], 'user_id' => auth()->id()]);
 
         return response()->json(new FileResource($file), Response::HTTP_CREATED);
     }
@@ -49,7 +49,24 @@ class FileController extends Controller
      */
     public function show(File $file)
     {
+        $this->authorize('show', $file);
+
         return new FileResource($file);
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  \App\Models\File  $file
+     * @return \Illuminate\Http\Response
+     */
+    public function download(File $file)
+    {
+        $this->authorize('download', $file);
+
+        $path = storage_path($file->path);
+
+        return response()->download($path);
     }
 
     /**
@@ -60,6 +77,8 @@ class FileController extends Controller
      */
     public function destroy(DestroyFileRequest $request, File $file)
     {
+        $this->authorize('delete', $file);
+
         $file->delete();
 
         if ($request->boolean('destroy_file_to')) {
