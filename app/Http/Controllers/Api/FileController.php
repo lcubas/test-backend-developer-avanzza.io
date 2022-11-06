@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DestroyFileRequest;
 use App\Http\Resources\FileResource;
 use App\Http\Requests\StoreFileRequest;
+use App\Http\Resources\FileCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,7 +22,7 @@ class FileController extends Controller
     {
         $files = File::all();
 
-        return new FileResource($files);
+        return new FileCollection($files);
     }
 
     /**

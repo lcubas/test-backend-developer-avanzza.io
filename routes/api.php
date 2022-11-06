@@ -18,11 +18,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::group(['middleware' => 'throttle:3,1', 'as' => 'api.'], function () {
-    Route::apiResource('files', App\Http\Controllers\Api\FileController::class)->only([
-        'index',
-        'store',
-        'show',
-        'destroy',
-    ]);
+Route::group(['as' => 'api.'], function () {
+    Route::post('login', [App\Http\Controllers\Api\AuthController::class, 'login'])->name('login');
+
+    Route::group(['middleware' => ['throttle:3,1', 'auth:sanctum']], function () {
+        Route::apiResource('files', App\Http\Controllers\Api\FileController::class)->only([
+            'index',
+            'store',
+            'show',
+            'destroy',
+        ]);
+    });
 });
