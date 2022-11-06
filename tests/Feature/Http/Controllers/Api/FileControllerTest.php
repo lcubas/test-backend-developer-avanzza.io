@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Models\File;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,10 @@ class FileControllerTest extends TestCase
         parent::setUp();
 
         Storage::fake(config('filesystems.default'));
+
+        /** @var User */
+        $user = User::factory()->create();
+        $this->actingAs($user);
     }
 
 	public function test_can_get_all_files()
