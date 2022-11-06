@@ -18,7 +18,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::group(['as' => 'api.'], function () {
+Route::group(['middleware' => 'throttle:3,1', 'as' => 'api.'], function () {
     Route::apiResource('files', App\Http\Controllers\Api\FileController::class)->only([
         'index',
         'store',
