@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Api;
 
+use App\Http\Resources\FileResource;
 use App\Models\File;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,13 +27,20 @@ class FileControllerTest extends TestCase
 
 	public function test_can_get_all_files()
 	{
-		$file = File::factory()->create();
+		$file = File::factory()->create(['user_id' => 1]);
 
 		$response = $this->getJson(route('api.files.index'));
 
 		$response->assertOk();
-		$response->assertJson([
-			'data' => [ $file->toArray() ]
+		$response->assertExactJson([
+			'data' => [
+                [
+                    'id' => $file->id,
+                    'name' => $file->name,
+                    'created_at' => $file->created_at,
+                    'updated_at' => $file->updated_at,
+                ]
+            ]
 		]);
 	}
 
@@ -75,28 +83,53 @@ class FileControllerTest extends TestCase
         );
     }
 
+    public function test_not_authorized_get_specific_file()
+	{
+        $user = User::factory()->create();
+		$file = File::factory()->create(['user_id' => $user->id]);
+
+		$response = $this->getJson(route('api.files.show', $file));
+
+		$response->assertForbidden();
+	}
+
     public function test_can_get_specific_file()
 	{
-		$file = File::factory()->create();
+		$file = File::factory()->create(['user_id' => 1]);
 
 		$response = $this->getJson(route('api.files.show', $file));
 
 		$response->assertOk();
-		$response->assertJson([
-			'data' => $file->toArray()
+		$response->assertExactJson([
+			'data' => [
+                'id' => $file->id,
+                'name' => $file->name,
+                'created_at' => $file->created_at,
+                'updated_at' => $file->updated_at,
+            ]
 		]);
 	}
 
-    public function test_cannot_get_specific_file()
+    public function test_not_found_get_specific_file()
 	{
 		$response = $this->getJson(route('api.files.show', 999));
 
 		$response->assertNotFound();
 	}
 
-    public function test_can_delete_logically_a_file()
+    public function test_not_authorized_delete_file()
     {
-        $file = File::factory()->create();
+        $user = User::factory()->create();
+		$file = File::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->deleteJson(route('api.files.destroy', $file));
+
+        $response->assertForbidden();
+    }
+
+    public function test_can_delete_logically_file()
+    {
+        $file = File::factory()->create(['user_id' => 1]);
 
         $response = $this->deleteJson(route('api.files.destroy', $file));
 
@@ -107,9 +140,9 @@ class FileControllerTest extends TestCase
         );
     }
 
-    public function test_can_delete_physically_a_file()
+    public function test_can_delete_physically_file()
     {
-        $file = File::factory()->create();
+        $file = File::factory()->create(['user_id' => 1]);
 
         $response = $this->deleteJson(route('api.files.destroy', $file), ['destroy_file_to' => 1]);
 
