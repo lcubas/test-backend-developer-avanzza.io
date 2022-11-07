@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\File;
 
-class StoreFileRequest extends FormRequest
+class BulkUploadFileRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,9 +25,9 @@ class StoreFileRequest extends FormRequest
     public function rules()
     {
         return [
-            'file' => [
+            'files' => 'required|array',
+            'files.*' => [
                 'file',
-                'required',
                 File::default()->max(config('file.max_size')),
             ],
         ];

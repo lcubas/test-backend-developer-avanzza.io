@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\File;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\BulkUploadFileRequest;
 use App\Http\Requests\DestroyFileRequest;
 use App\Http\Resources\FileResource;
-use App\Http\Requests\StoreFileRequest;
+use App\Http\Requests\UploadFileRequest;
 use App\Http\Resources\FileCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
@@ -28,10 +29,10 @@ class FileController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \App\Http\Requests\StoreFileRequest  $request
+     * @param  \App\Http\Requests\UploadFileRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreFileRequest $request)
+    public function upload(UploadFileRequest $request)
     {
         $path = $request->file('file')->store(config('file.directory'));
         $path = explode('/', $path);
@@ -39,6 +40,32 @@ class FileController extends Controller
         $file = File::create(['name' => $path[1], 'user_id' => auth()->id()]);
 
         return response()->json(new FileResource($file), Response::HTTP_CREATED);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \App\Http\Requests\BulkUploadFileRequest  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function bulkUpload(BulkUploadFileRequest $request)
+    {
+        $count = 0;
+        $userId = auth()->id();
+        $directory = config('file.directory');
+
+        foreach ($request->file('files') as $file) {
+            $path = $file->store($directory);
+            $path = explode('/', $path);
+
+            File::create(['name' => $path[1], 'user_id' => $userId]);
+
+            $count++;
+        }
+
+        return response()->json([
+            'data' => ['message' => "{$count} files upload succesfully"]
+        ], Response::HTTP_CREATED);
     }
 
     /**
@@ -82,9 +109,9 @@ class FileController extends Controller
         $file->delete();
 
         if ($request->boolean('destroy_file_to')) {
-            $filePath = config('file.directory') . '\\' . $file->name;
+            $path = config('file.directory') . '\\' . $file->name;
 
-            Storage::delete($filePath);
+            Storage::delete($path);
         }
 
         return response()->json(null, Response::HTTP_NO_CONTENT);

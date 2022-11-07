@@ -24,10 +24,11 @@ Route::group(['as' => 'api.'], function () {
     Route::group(['middleware' => ['throttle:3000,1', 'auth:sanctum']], function () {
         Route::apiResource('files', App\Http\Controllers\Api\FileController::class)->only([
             'index',
-            'store',
             'show',
             'destroy',
         ]);
+        Route::post('files/upload', [App\Http\Controllers\Api\FileController::class, 'upload'])->name('files.upload');
+        Route::post('files/bulk-upload', [App\Http\Controllers\Api\FileController::class, 'bulkUpload'])->name('files.bulk-upload');
         Route::get('files/{file}/download', [App\Http\Controllers\Api\FileController::class, 'download'])->name('files.download');
     });
 });
