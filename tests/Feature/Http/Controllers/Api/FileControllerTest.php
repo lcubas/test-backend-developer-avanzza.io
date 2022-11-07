@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http\Controllers\Api;
 
-use App\Http\Resources\FileResource;
 use App\Models\File;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -44,21 +43,23 @@ class FileControllerTest extends TestCase
 		]);
 	}
 
-    public function test_can_store_a_file()
+    public function test_can_upload_a_file()
     {
-        $response = $this->postJson(route('api.files.store'), [
+        $response = $this->postJson(route('api.files.upload'), [
             'file' => UploadedFile::fake()->create('test-file.csv')
         ]);
 
         $response->assertCreated();
         $this->assertTrue(
-            Storage::disk(config('filesystems.default'))->exists('files/' . $response->decodeResponseJson()['name'])
+            Storage::disk(config('filesystems.default'))->exists(
+                config('file.directory') . '\\' . $response->decodeResponseJson()['name']
+            )
         );
     }
 
     public function test_file_field_required()
     {
-        $response = $this->postJson(route('api.files.store'));
+        $response = $this->postJson(route('api.files.upload'));
 
         $response->assertUnprocessable();
         $response->assertJsonValidationErrorFor('file');
@@ -71,7 +72,7 @@ class FileControllerTest extends TestCase
     public function test_file_field_size_is_larger_than_allowed()
     {
         $size = (int) config('file.max_size') + 1;
-        $response = $this->postJson(route('api.files.store'), [
+        $response = $this->postJson(route('api.files.upload'), [
             'file' => UploadedFile::fake()->create('test-file.csv', $size)
         ]);
 
@@ -81,6 +82,24 @@ class FileControllerTest extends TestCase
             __('validation.max.file', ['attribute' => 'file', 'max' => config('file.max_size')]),
             $response->json('errors.file.0')
         );
+    }
+
+    public function test_can_bulk_upload_files()
+    {
+        $response = $this->postJson(route('api.files.bulk-upload'), [
+            'files' => [
+                UploadedFile::fake()->create('test-file.csv'),
+                UploadedFile::fake()->create('test-file2.csv'),
+                UploadedFile::fake()->create('test-file3.csv'),
+            ]
+        ]);
+
+        $response->assertCreated();
+        $response->assertJson([
+            'data' => [
+                'message' => '3 files upload succesfully',
+            ]
+        ]);
     }
 
     public function test_not_authorized_get_specific_file()
@@ -136,7 +155,9 @@ class FileControllerTest extends TestCase
         $response->assertNoContent();
         $this->assertSoftDeleted('files', ['id' => $file->id]);
         $this->assertTrue(
-            Storage::disk(config('filesystems.default'))->exists('files/' . $file->name)
+            Storage::disk(config('filesystems.default'))->exists(
+                config('file.directory') . '\\' . $file->name
+            )
         );
     }
 
@@ -149,7 +170,9 @@ class FileControllerTest extends TestCase
         $response->assertNoContent();
         $this->assertSoftDeleted('files', ['id' => $file->id]);
         $this->assertFalse(
-            Storage::disk(config('filesystems.default'))->exists('files/' . $file->name)
+            Storage::disk(config('filesystems.default'))->exists(
+                config('file.directory') . '\\' . $file->name
+            )
         );
     }
 }
